@@ -38,6 +38,8 @@ public class ScheduleActivity extends AppCompatActivity {
     TextView waktu1,waktu2;
 
     @RequiresApi(33)
+
+
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
@@ -87,7 +89,7 @@ public class ScheduleActivity extends AppCompatActivity {
                 setTimer(jam2, menit2, 2);
                 dbHelper.updateAlarm(new AlarmModel(2, jam2, menit2));
             }
-            dbHelper.initializeDefaultAlarms();
+
             loadAlarmsFromDatabase(); // perbarui tampilan
             Toast.makeText(this, "Alarm diperbarui", Toast.LENGTH_SHORT).show();
         });
@@ -152,13 +154,15 @@ public class ScheduleActivity extends AppCompatActivity {
 
         Intent i = new Intent(ScheduleActivity.this, AlarmReceiver.class);
         i.putExtra("alarm_id", requestCode);
-        i.setAction("com.example.diabetcare.ALARM_" + requestCode); // ini kunci penting
+        i.putExtra("jadwal_jam", jam);
+        i.putExtra("jadwal_menit", menit);
+        i.setAction("com.example.diabetcare.ALARM_" + requestCode); // tetap dipertahankan
 
         PendingIntent pendingIntent = PendingIntent.getBroadcast(
                 ScheduleActivity.this,
                 requestCode,
                 i,
-                PendingIntent.FLAG_IMMUTABLE
+                PendingIntent.FLAG_IMMUTABLE | PendingIntent.FLAG_UPDATE_CURRENT
         );
 
         alarmManager.setExactAndAllowWhileIdle(

@@ -41,18 +41,37 @@ public class AlarmReceiver extends BroadcastReceiver {
             manager.createNotificationChannel(channel);
         }
         Log.d("AlarmReceiver", "Alarm triggered!");
-        Intent i = new Intent(context, ScheduleActivity.class); // Ganti dengan activity konfirmasi
-        i.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_CLEAR_TASK);
-        PendingIntent pendingIntent = PendingIntent.getActivity(context, 0, i, PendingIntent.FLAG_IMMUTABLE);
 
-        NotificationCompat.Builder builder = new NotificationCompat.Builder(context, "Notify") // Pastikan ID channel sama
-                .setSmallIcon(R.mipmap.ic_launcher)
-                .setContentTitle("Medicine Reminders")
-                .setContentText("Sudah waktunya minum obat")
-                .setAutoCancel(true)
-                .setDefaults(NotificationCompat.DEFAULT_ALL)
-                .setPriority(NotificationCompat.PRIORITY_MAX)
-                .setContentIntent(pendingIntent);
+
+        int alarmId = intent.getIntExtra("alarm_id", -1);
+        int hour = intent.getIntExtra("jadwal_jam", -1);
+        int minute = intent.getIntExtra("jadwal_menit", -1);
+
+        Intent checkIntent = new Intent(context, MedicineCheck.class);
+        checkIntent.putExtra("alarm_id", alarmId);
+        checkIntent.putExtra("jadwal_jam", hour);
+        checkIntent.putExtra("jadwal_menit", minute);
+        checkIntent.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_CLEAR_TASK);
+
+        PendingIntent pendingIntent = PendingIntent.getActivity(
+                context,
+                alarmId,
+                checkIntent,
+                PendingIntent.FLAG_IMMUTABLE | PendingIntent.FLAG_UPDATE_CURRENT
+
+        );
+
+        Log.d("AlarmReceiver", "checkIntent extras: " +
+                checkIntent.getIntExtra("alarm_id", -1) + " " +
+                checkIntent.getIntExtra("jadwal_jam", -1) + ":" +
+                checkIntent.getIntExtra("jadwal_menit", -1));
+
+        NotificationCompat.Builder builder = new NotificationCompat.Builder(context, "Notify")
+                .setSmallIcon(R.drawable.ic_launcher_foreground)
+                .setContentTitle("Waktunya minum obat")
+                .setContentText("Klik untuk konfirmasi alarm " + alarmId + ", jadwal " + hour + ":" + minute)
+                .setContentIntent(pendingIntent)
+                .setAutoCancel(true);
 
         NotificationManagerCompat notificationManagerCompat = NotificationManagerCompat.from(context);
         notificationManagerCompat.notify(200, builder.build());
@@ -62,5 +81,6 @@ public class AlarmReceiver extends BroadcastReceiver {
 
         Ringtone r = RingtoneManager.getRingtone(context,sound);
         r.play();
+        Log.d("AlarmReceiver", "alarmId=" + alarmId + " jam=" + hour + " menit=" + minute);
     }
 }

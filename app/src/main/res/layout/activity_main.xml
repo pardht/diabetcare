@@ -34,5 +34,17 @@
         android:text="Dashboard Kepatuhan"
         tools:layout_editor_absoluteX="119dp"
         tools:layout_editor_absoluteY="439dp" />
+
+        <Button
+            android:id="@+id/btn_check_alarm1"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="Cek Obat Alarm 1" />
+
+        <Button
+            android:id="@+id/btn_check_alarm2"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="Cek Obat Alarm 2" />
 </LinearLayout>
 </androidx.constraintlayout.widget.ConstraintLayout>

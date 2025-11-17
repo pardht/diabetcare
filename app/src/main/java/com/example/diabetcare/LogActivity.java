@@ -1,12 +1,15 @@
 package com.example.diabetcare;
 
 import android.os.Bundle;
+import android.widget.ListView;
 
 import androidx.activity.EdgeToEdge;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.core.graphics.Insets;
 import androidx.core.view.ViewCompat;
 import androidx.core.view.WindowInsetsCompat;
+
+import java.util.List;
 
 public class LogActivity extends AppCompatActivity {
 
@@ -20,5 +23,12 @@ public class LogActivity extends AppCompatActivity {
             v.setPadding(systemBars.left, systemBars.top, systemBars.right, systemBars.bottom);
             return insets;
         });
+
+        ListView listView = findViewById(R.id.list_of_history);
+        DbHelper dbHelper = new DbHelper(this);
+        List<HistoryModel> history = dbHelper.getHistoryGroupedByDate();
+
+        HistoryAdapter adapter = new HistoryAdapter(this, history);
+        listView.setAdapter(adapter);
     }
 }
