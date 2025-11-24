@@ -2,6 +2,7 @@ package com.example.diabetcare;
 
 import android.Manifest;
 import android.app.AlarmManager;
+import android.app.AlertDialog;
 import android.app.PendingIntent;
 import android.app.TimePickerDialog;
 import android.content.Context;
@@ -10,10 +11,12 @@ import android.content.pm.PackageManager;
 import android.os.Build;
 import android.os.Bundle;
 import android.widget.Button;
+import android.widget.EditText;
 import android.widget.TextView;
 import android.widget.Toast;
 
 import androidx.activity.EdgeToEdge;
+import androidx.annotation.Nullable;
 import androidx.annotation.RequiresApi;
 import androidx.annotation.RequiresPermission;
 import androidx.appcompat.app.AppCompatActivity;
@@ -21,7 +24,12 @@ import androidx.core.content.ContextCompat;
 import androidx.core.graphics.Insets;
 import androidx.core.view.ViewCompat;
 import androidx.core.view.WindowInsetsCompat;
+import androidx.recyclerview.widget.LinearLayoutManager;
+import androidx.recyclerview.widget.RecyclerView;
 
+import com.google.android.material.floatingactionbutton.FloatingActionButton;
+
+import java.util.ArrayList;
 import java.util.Calendar;
 import java.util.List;
 
@@ -29,13 +37,11 @@ import java.util.List;
 
 public class ScheduleActivity extends AppCompatActivity {
 
-     Button setReminder;
+    private RecyclerView recyclerAlarms;
+    private AlarmAdapter adapter;
+    private List<AlarmModel> alarmList = new ArrayList<>();
+    private DbHelper dbHelper;
 
-    private int jam1 = -1, menit1 = -1;
-    private int jam2 = -1, menit2 = -1;
-
-
-    TextView waktu1,waktu2;
 
     @RequiresApi(33)
 
@@ -45,102 +51,155 @@ public class ScheduleActivity extends AppCompatActivity {
         super.onCreate(savedInstanceState);
         EdgeToEdge.enable(this);
         setContentView(R.layout.activity_schedule);
+
         ViewCompat.setOnApplyWindowInsetsListener(findViewById(R.id.main), (v, insets) -> {
             Insets systemBars = insets.getInsets(WindowInsetsCompat.Type.systemBars());
             v.setPadding(systemBars.left, systemBars.top, systemBars.right, systemBars.bottom);
             return insets;
         });
-        DbHelper dbHelper = new DbHelper(this);
-        List<AlarmModel> savedAlarms = dbHelper.getAllAlarms();
-        waktu1 = findViewById(R.id.waktu1);
-        waktu2 = findViewById(R.id.waktu2);
-        for (AlarmModel alarm : savedAlarms) {
-            if (alarm.id == 1) {
-                jam1 = alarm.hour;
-                menit1 = alarm.minute;
-                waktu1.setText(String.format("%02d:%02d", jam1, menit1));
-            } else if (alarm.id == 2) {
-                jam2 = alarm.hour;
-                menit2 = alarm.minute;
-                waktu2.setText(String.format("%02d:%02d", jam2, menit2));
+
+        dbHelper = new DbHelper(this); // ✅ inisialisasi field, bukan variabel lokal
+
+        FloatingActionButton fabAdd = findViewById(R.id.fab_add);
+        fabAdd.setOnClickListener(v -> {
+            if (alarmList.size() >= 5) {
+                Toast.makeText(this, "Maksimal 5 jadwal", Toast.LENGTH_SHORT).show();
+                return;
             }
-        }
+            showAddDialog();
+        });
 
+        recyclerAlarms = findViewById(R.id.recyclerAlarms);
+        alarmList = dbHelper.getAllAlarms();
 
-        setReminder = findViewById(R.id.set_reminder);
+        adapter = new AlarmAdapter(this, alarmList, new AlarmAdapter.OnAlarmActionListener() {
+            @Override
+            public void onEdit(AlarmModel alarm) {
+                showEditDialog(alarm);
+            }
 
-        waktu1.setOnClickListener(v -> showTimePicker(1));
-        waktu2.setOnClickListener(v -> showTimePicker(2));
-
-        setReminder.setOnClickListener(v -> {
-            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
-                if (ContextCompat.checkSelfPermission(this, Manifest.permission.POST_NOTIFICATIONS)
-                        != PackageManager.PERMISSION_GRANTED) {
-                    Toast.makeText(this, "Izin notifikasi belum diberikan. Jadwal tidak bisa diatur.", Toast.LENGTH_LONG).show();
+            @Override
+            public void onDelete(AlarmModel alarm) {
+                if (alarmList.size() <= 1) {
+                    Toast.makeText(ScheduleActivity.this, "Minimal 1 jadwal harus ada", Toast.LENGTH_SHORT).show();
                     return;
                 }
-            }
 
-            if (jam1 != -1 && menit1 != -1) {
-                setTimer(jam1, menit1, 1);
-                dbHelper.updateAlarm(new AlarmModel(1, jam1, menit1));
+                dbHelper.deleteAlarm(alarm.id);
+                cancelAlarm(alarm.id);
+                loadAlarms();
             }
-            if (jam2 != -1 && menit2 != -1) {
-                setTimer(jam2, menit2, 2);
-                dbHelper.updateAlarm(new AlarmModel(2, jam2, menit2));
-            }
-
-            loadAlarmsFromDatabase(); // perbarui tampilan
-            Toast.makeText(this, "Alarm diperbarui", Toast.LENGTH_SHORT).show();
         });
+
+        recyclerAlarms.setLayoutManager(new LinearLayoutManager(this));
+        recyclerAlarms.setAdapter(adapter);
     }
 
-
-    private void loadAlarmsFromDatabase() {
-        DbHelper dbHelper = new DbHelper(this);
-        List<AlarmModel> savedAlarms = dbHelper.getAllAlarms();
-
-        for (AlarmModel alarm : savedAlarms) {
-            if (alarm.id == 1) {
-                jam1 = alarm.hour;
-                menit1 = alarm.minute;
-                waktu1.setText(String.format("%02d:%02d", jam1, menit1));
-            } else if (alarm.id == 2) {
-                jam2 = alarm.hour;
-                menit2 = alarm.minute;
-                waktu2.setText(String.format("%02d:%02d", jam2, menit2));
-            }
+    private boolean isDuplicateTime(int hour, int minute, @Nullable Integer excludeId) {
+        for (AlarmModel alarm : alarmList) {
+            if (excludeId != null && alarm.id == excludeId) continue;
+            if (alarm.hour == hour && alarm.minute == minute) return true;
         }
+        return false;
     }
 
-    private void showTimePicker(int id) {
+    private void showEditDialog(AlarmModel alarm) {
+        TimePickerDialog timePicker = new TimePickerDialog(
+                this,
+                (view, selectedHour, selectedMinute) -> {
+                    showKeteranganDialog(selectedHour, selectedMinute, alarm);
+                },
+                alarm.hour,
+                alarm.minute,
+                true
+        );
+        timePicker.show();
+    }
+
+    private int generateNewId() {
+        int maxId = 0;
+        for (AlarmModel alarm : alarmList) {
+            if (alarm.id > maxId) maxId = alarm.id;
+        }
+        return maxId + 1;
+    }
+
+    private void showKeteranganDialog(int hour, int minute, @Nullable AlarmModel toEdit) {
+        EditText input = new EditText(this);
+        input.setHint("Masukkan keterangan");
+
+        new AlertDialog.Builder(this)
+                .setTitle(toEdit == null ? "Tambah Jadwal" : "Edit Jadwal")
+                .setView(input)
+                .setPositiveButton("Simpan", (dialog, which) -> {
+                    String keterangan = input.getText().toString().trim();
+                    if (keterangan.isEmpty()) {
+                        Toast.makeText(this, "Keterangan tidak boleh kosong", Toast.LENGTH_SHORT).show();
+                        return;
+                    }
+
+                    if (isDuplicateTime(hour, minute, toEdit != null ? toEdit.id : null)) {
+                        Toast.makeText(this, "Jadwal dengan jam yang sama sudah ada", Toast.LENGTH_SHORT).show();
+                        return;
+                    }
+
+                    if (toEdit == null) {
+                        int newId = generateNewId();
+                        AlarmModel newAlarm = new AlarmModel(newId, hour, minute, keterangan);
+                        dbHelper.insertAlarm(newAlarm);
+                        setTimer(hour, minute, newId, keterangan);
+                    } else {
+                        AlarmModel updated = new AlarmModel(toEdit.id, hour, minute, keterangan);
+                        dbHelper.updateAlarm(updated);
+                        setTimer(hour, minute, updated.id, keterangan);
+                    }
+
+                    loadAlarms();
+                })
+                .setNegativeButton("Batal", null)
+                .show();
+    }
+
+    private void showAddDialog() {
         Calendar now = Calendar.getInstance();
         int hour = now.get(Calendar.HOUR_OF_DAY);
         int minute = now.get(Calendar.MINUTE);
 
-        TimePickerDialog dialog = new TimePickerDialog(
+        TimePickerDialog timePicker = new TimePickerDialog(
                 this,
-                android.R.style.Theme_Holo_Light_Dialog_NoActionBar_MinWidth,
                 (view, selectedHour, selectedMinute) -> {
-                    if (id == 1) {
-                        jam1 = selectedHour;
-                        menit1 = selectedMinute;
-                        waktu1.setText(String.format("%02d:%02d", jam1, menit1));
-                    } else {
-                        jam2 = selectedHour;
-                        menit2 = selectedMinute;
-                        waktu2.setText(String.format("%02d:%02d", jam2, menit2));
-                    }
+                    showKeteranganDialog(selectedHour, selectedMinute, null); // null artinya tambah baru
                 },
                 hour,
                 minute,
                 true
         );
-        dialog.show();
+        timePicker.show();
     }
 
+    private void loadAlarms() {
+        alarmList.clear();
+        alarmList.addAll(dbHelper.getAllAlarms());
+        adapter.notifyDataSetChanged();
+    }
+
+    private void cancelAlarm(int alarmId) {
+        AlarmManager alarmManager = (AlarmManager) getSystemService(Context.ALARM_SERVICE);
+        Intent intent = new Intent(this, AlarmReceiver.class);
+        intent.setAction("com.example.diabetcare.ALARM_" + alarmId);
+        PendingIntent pendingIntent = PendingIntent.getBroadcast(
+                this,
+                alarmId,
+                intent,
+                PendingIntent.FLAG_IMMUTABLE | PendingIntent.FLAG_UPDATE_CURRENT
+        );
+        alarmManager.cancel(pendingIntent);
+    }
+
+
+
     @RequiresPermission(Manifest.permission.SCHEDULE_EXACT_ALARM)
-    private void setTimer(int jam, int menit, int requestCode) {
+    private void setTimer(int jam, int menit, int requestCode, String keterangan) {
         AlarmManager alarmManager = (AlarmManager) getSystemService(Context.ALARM_SERVICE);
         Calendar cal_alarm = Calendar.getInstance();
         cal_alarm.set(Calendar.HOUR_OF_DAY, jam);
@@ -156,7 +215,8 @@ public class ScheduleActivity extends AppCompatActivity {
         i.putExtra("alarm_id", requestCode);
         i.putExtra("jadwal_jam", jam);
         i.putExtra("jadwal_menit", menit);
-        i.setAction("com.example.diabetcare.ALARM_" + requestCode); // tetap dipertahankan
+        i.putExtra("keterangan", keterangan);
+        i.setAction("com.example.diabetcare.ALARM_" + requestCode);
 
         PendingIntent pendingIntent = PendingIntent.getBroadcast(
                 ScheduleActivity.this,

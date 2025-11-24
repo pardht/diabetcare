@@ -23,6 +23,7 @@ public class DbHelper extends SQLiteOpenHelper {
     public static final String COLUMN_ID = "id";
     public static final String COLUMN_HOUR = "hour";
     public static final String COLUMN_MINUTE = "minute";
+    public static final String COLUMN_KETERANGAN = "keterangan";
 
     public DbHelper(Context context) {
         super(context, DATABASE_NAME, null, DATABASE_VERSION);
@@ -42,7 +43,8 @@ public class DbHelper extends SQLiteOpenHelper {
         String CREATE_TABLE = "CREATE TABLE " + TABLE_NAME + " (" +
                 COLUMN_ID + " INTEGER PRIMARY KEY," +
                 COLUMN_HOUR + " INTEGER," +
-                COLUMN_MINUTE + " INTEGER)";
+                COLUMN_MINUTE + " INTEGER," +
+                "keterangan TEXT)";
         db.execSQL(CREATE_TABLE);
     }
 
@@ -51,6 +53,14 @@ public class DbHelper extends SQLiteOpenHelper {
         db.execSQL("DROP TABLE IF EXISTS " + TABLE_NAME);
         db.execSQL("DROP TABLE IF EXISTS riwayat");
         onCreate(db);
+    }
+
+    public void resetToDefaultAlarms() {
+        SQLiteDatabase db = this.getWritableDatabase();
+        db.delete(TABLE_NAME, null, null);
+        insertAlarm(new AlarmModel(1, 8, 0, "Pagi hari"));
+        insertAlarm(new AlarmModel(2, 20, 0, "Malam hari"));
+        db.close();
     }
 
     public void insertRiwayat(int idAlarm, String tanggal, String status, String waktuKonfirmasi) {
@@ -70,6 +80,7 @@ public class DbHelper extends SQLiteOpenHelper {
         values.put(COLUMN_ID, alarm.id);
         values.put(COLUMN_HOUR, alarm.hour);
         values.put(COLUMN_MINUTE, alarm.minute);
+        values.put("keterangan", alarm.keterangan);
         db.insert(TABLE_NAME, null, values);
         db.close();
     }
@@ -84,7 +95,8 @@ public class DbHelper extends SQLiteOpenHelper {
                 int id = cursor.getInt(cursor.getColumnIndexOrThrow(COLUMN_ID));
                 int hour = cursor.getInt(cursor.getColumnIndexOrThrow(COLUMN_HOUR));
                 int minute = cursor.getInt(cursor.getColumnIndexOrThrow(COLUMN_MINUTE));
-                alarms.add(new AlarmModel(id, hour, minute));
+                String keterangan = cursor.getString(cursor.getColumnIndexOrThrow("keterangan"));
+                alarms.add(new AlarmModel(id, hour, minute, keterangan));
             } while (cursor.moveToNext());
         }
         cursor.close();
@@ -97,7 +109,14 @@ public class DbHelper extends SQLiteOpenHelper {
         ContentValues values = new ContentValues();
         values.put(COLUMN_HOUR, alarm.hour);
         values.put(COLUMN_MINUTE, alarm.minute);
+        values.put("keterangan", alarm.keterangan);
         db.update(TABLE_NAME, values, COLUMN_ID + "=?", new String[]{String.valueOf(alarm.id)});
+        db.close();
+    }
+
+    public void deleteAlarm(int id) {
+        SQLiteDatabase db = this.getWritableDatabase();
+        db.delete(TABLE_NAME, COLUMN_ID + "=?", new String[]{String.valueOf(id)});
         db.close();
     }
 
@@ -118,14 +137,6 @@ public class DbHelper extends SQLiteOpenHelper {
         cursor.close();
         db.close();
         return exists;
-    }
-
-    public void initializeDefaultAlarms(int jam1, int menit1, int jam2, int menit2) {
-        List<AlarmModel> existing = getAllAlarms();
-        if (existing.isEmpty()) {
-            insertAlarm(new AlarmModel(1, jam1, menit1));
-            insertAlarm(new AlarmModel(2, jam2, menit2));
-        }
     }
 
     public List<HistoryModel> getHistoryGroupedByDate() {

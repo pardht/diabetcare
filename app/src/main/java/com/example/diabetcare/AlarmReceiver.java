@@ -46,11 +46,14 @@ public class AlarmReceiver extends BroadcastReceiver {
         int alarmId = intent.getIntExtra("alarm_id", -1);
         int hour = intent.getIntExtra("jadwal_jam", -1);
         int minute = intent.getIntExtra("jadwal_menit", -1);
+        String keterangan = intent.getStringExtra("keterangan");
+        if (keterangan == null) keterangan = "Minum obat";
 
         Intent checkIntent = new Intent(context, MedicineCheck.class);
         checkIntent.putExtra("alarm_id", alarmId);
         checkIntent.putExtra("jadwal_jam", hour);
         checkIntent.putExtra("jadwal_menit", minute);
+        checkIntent.putExtra("keterangan", keterangan);
         checkIntent.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_CLEAR_TASK);
 
         PendingIntent pendingIntent = PendingIntent.getActivity(
@@ -69,7 +72,7 @@ public class AlarmReceiver extends BroadcastReceiver {
         NotificationCompat.Builder builder = new NotificationCompat.Builder(context, "Notify")
                 .setSmallIcon(R.drawable.ic_launcher_foreground)
                 .setContentTitle("Waktunya minum obat")
-                .setContentText("Klik untuk konfirmasi alarm " + alarmId + ", jadwal " + hour + ":" + minute)
+                .setContentText(keterangan + " - " + String.format("%02d:%02d", hour, minute))
                 .setContentIntent(pendingIntent)
                 .setAutoCancel(true);
 
