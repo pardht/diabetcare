@@ -39,7 +39,7 @@ public class MedicineCheck extends AppCompatActivity {
         int jadwalMenit = getIntent().getIntExtra("jadwal_menit", -1);
 
         txtJadwal = findViewById(R.id.txt_jadwal);
-        txtJadwal.setText("id :" + alarmId + "Jadwal: " + String.format("%02d:%02d", jadwalJam, jadwalMenit));
+        txtJadwal.setText(String.format("%02d:%02d", jadwalJam, jadwalMenit));
 
         btnYes = findViewById(R.id.btn_yes);
         btnNo = findViewById(R.id.btn_no);
