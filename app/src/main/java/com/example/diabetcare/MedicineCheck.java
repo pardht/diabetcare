@@ -12,16 +12,14 @@ import androidx.core.graphics.Insets;
 import androidx.core.view.ViewCompat;
 import androidx.core.view.WindowInsetsCompat;
 
-import java.text.SimpleDateFormat;
 import java.util.Calendar;
-import java.util.Date;
-import java.util.Locale;
 
 public class MedicineCheck extends AppCompatActivity {
 
     Button btnYes, btnNo;
     int alarmId, jadwalJam, jadwalMenit;
-    TextView txtJadwal;
+    String alarmDesc;
+    TextView txtJadwal, txtKet;
     DbHelper dbHelper;
 
 
@@ -37,11 +35,14 @@ public class MedicineCheck extends AppCompatActivity {
         });
 
         alarmId = getIntent().getIntExtra("alarm_id", -1);
+        alarmDesc = getIntent().getStringExtra("keterangan");
         jadwalJam = getIntent().getIntExtra("jadwal_jam", -1);
         jadwalMenit = getIntent().getIntExtra("jadwal_menit", -1);
 
         txtJadwal = findViewById(R.id.txt_jadwal);
-        txtJadwal.setText("id :" + alarmId + " Jadwal: " + String.format("%02d:%02d", jadwalJam, jadwalMenit));
+        txtKet = findViewById(R.id.txt_ket);
+        txtJadwal.setText("Jadwal " + String.format("%02d:%02d", jadwalJam, jadwalMenit));
+        txtKet.setText("Keterangan : " + alarmDesc);
 
         btnYes = findViewById(R.id.btn_yes);
         btnNo = findViewById(R.id.btn_no);

@@ -22,7 +22,7 @@ public class CheckAlarmAdapter extends RecyclerView.Adapter<CheckAlarmAdapter.Ch
     private DbHelper dbHelper;
 
     // konstanta window validasi (1 jam)
-    private static final long WINDOW_MILLIS = 1 * 60 * 60 * 1000;
+    private static final long WINDOW_MILLIS = 60 * 60 * 1000;
 
     public CheckAlarmAdapter(Context context, List<AlarmModel> alarms, DbHelper dbHelper) {
         this.context = context;
@@ -54,13 +54,14 @@ public class CheckAlarmAdapter extends RecyclerView.Adapter<CheckAlarmAdapter.Ch
 
         } else if (inWindow) {
             holder.btnCheck.setEnabled(true);
-            holder.btnCheck.setText("Cek Obat (" + jamText + ")");
+            holder.btnCheck.setText("konfirmasi Obat (" + jamText + ")");
             holder.btnCheck.setOnClickListener(v -> {
                 Intent intent = new Intent(context, MedicineCheck.class);
                 intent.putExtra("alarm_id", alarm.id);
                 intent.putExtra("jadwal_jam", alarm.hour);
                 intent.putExtra("jadwal_menit", alarm.minute);
                 intent.putExtra("keterangan", alarm.keterangan);
+
 
                 // kirim juga tanggal_jadwal sesuai jam alarm
                 Calendar target = Calendar.getInstance();

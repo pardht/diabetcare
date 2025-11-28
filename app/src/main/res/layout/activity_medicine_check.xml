@@ -65,11 +65,21 @@
                 android:textStyle="bold"
                 />
             <TextView
+                android:id="@+id/txt_ket"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:text="keterangan disini"
+                android:textSize="18sp"
+                android:paddingTop="10dp"
+                android:paddingBottom="20dp"
+                android:textStyle="bold"
+                />
+            <TextView
                 android:id="@+id/title_medicine_check"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:text="Apakah kamu sudah minum obat?"
-                android:textSize="25dp"
+                android:textSize="20dp"
                 android:paddingTop="10dp"
                 />
 
