@@ -9,6 +9,7 @@ import android.widget.Button;
 
 import androidx.annotation.NonNull;
 import androidx.recyclerview.widget.RecyclerView;
+import androidx.core.content.ContextCompat;
 
 import java.text.SimpleDateFormat;
 import java.util.Calendar;
@@ -48,6 +49,9 @@ public class CheckAlarmAdapter extends RecyclerView.Adapter<CheckAlarmAdapter.Ch
             holder.btnCheck.setEnabled(false);
             holder.btnCheck.setText("Sudah dikonfirmasi (" + jamText + ")");
             holder.btnCheck.setOnClickListener(null);
+            holder.btnCheck.setBackgroundResource(R.drawable.btn_confirmed);
+            holder.btnCheck.setTextColor(ContextCompat.getColor(context, R.color.black));
+
         } else if (inWindow) {
             holder.btnCheck.setEnabled(true);
             holder.btnCheck.setText("Cek Obat (" + jamText + ")");
@@ -74,6 +78,7 @@ public class CheckAlarmAdapter extends RecyclerView.Adapter<CheckAlarmAdapter.Ch
         } else {
             holder.btnCheck.setEnabled(false);
             holder.btnCheck.setText("Diluar waktu cek (" + jamText + ")");
+            holder.btnCheck.setBackgroundResource(R.drawable.btn_disabled);
             holder.btnCheck.setOnClickListener(null);
         }
     }
@@ -104,4 +109,3 @@ public class CheckAlarmAdapter extends RecyclerView.Adapter<CheckAlarmAdapter.Ch
         return diff <= WINDOW_MILLIS;
     }
 }
-
